@@ -12,7 +12,7 @@ class JwtError(Exception):
         super().__init__(self.message)
 
 
-secret = "SECRET_KEY_VERY_VERY_SECRET"
+secret = "CHANGE ME"
 expiration_in_seconds = 3600
 
 
