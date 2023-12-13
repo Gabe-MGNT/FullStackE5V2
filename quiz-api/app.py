@@ -2,8 +2,8 @@ from flask import Flask, request
 from flask_cors import CORS
 import hashlib
 from jwt_utils import build_token, decode_token, JwtError
-from db_request import add_question, get_question
-from models import Question
+from db_request import add_question, get_question_by_id, get_question_by_position, add_answers
+from models import Question, Answer
 
 app = Flask(__name__)
 CORS(app)
@@ -35,25 +35,32 @@ def SaveQuestion():
         return 'Unauthorized', 401
     token = token.split(' ')[1]
 
-    body = request.get_json()
-    question = Question.from_dict(body)
+    data = request.get_json()
+
+    question = Question.from_dict(data)
+    question_id, status = add_question(question)
+
+    if status != 200:
+        return {'error': 'Failed to add question'}, status
+
+    answers = [Answer.from_dict(answer) for answer in data['possibleAnswers']]
 
     try:
-        decode_token(token)
-        last_id, code = add_question(question)
-        return {"id": last_id}, 200
-    except JwtError:
-        return 'Unauthorized', 401
+        add_answers(answers, question_id)
     except Exception as e:
-         return 'Bad SQL', 401
-    
-@app.route("/questions/<int:id>", methods=['GET'])
-def GetQuestion(id:int):
+        return {'error': str(e)}, 400
+
+    return {'id': question_id}, 200
+
+
+@app.route("/questions/<int:question_id>", methods=['GET'])
+def get_question(question_id:int):
+     response, code = get_question_by_id(question_id)
+     if code ==200:
+        return response
+
+
      
-
-    question = get_question(id)
-
-    return question
 
      
 
