@@ -29,22 +29,27 @@ def Login():
     
 @app.route("/questions", methods=['POST'])
 def SaveQuestion():
-    token = request.headers.get('Authorization')
 
+    # REGARDE SI REQUETE A TOKEN DANS HEADER
+    token = request.headers.get('Authorization')
     if token is None:
         return 'Unauthorized', 401
     token = token.split(' ')[1]
 
+    # TRANSFORME LA QUESTION RENSEIGNEE EN OBJET QUESTION
     data = request.get_json()
-
     question = Question.from_dict(data)
+
+    # AJOUTE LA QUESTION RENSEIGNEE
     question_id, status = add_question(question)
 
     if status != 200:
         return {'error': 'Failed to add question'}, status
 
+    # TRANSFORME LES REPONSES EN LISTES DOBJETS ANSWERS
     answers = [Answer.from_dict(answer) for answer in data['possibleAnswers']]
 
+    # AJOUTE LES REPONSES
     try:
         add_answers(answers, question_id)
     except Exception as e:
