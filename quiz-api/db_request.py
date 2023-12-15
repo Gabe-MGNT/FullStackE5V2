@@ -30,10 +30,11 @@ def add_question(input_question: Question):
     CUR = get_cursor()
 
     # AJOUT DE QUESTIONS (CAS OU ELLE EXITE DEJA => CHECK AVEC POSITION, TITRE, TEXTE ET IMAGE)
+    print("AA")
     id, code = check_question_exist(CUR, input_question)
     if id is not None:
         return id, code
-
+    print("BB")
     # start transaction
     CUR.execute("begin")
 
@@ -47,8 +48,25 @@ def add_question(input_question: Question):
         # send the request
         CUR.execute("commit")
         return last_id, 200
+    
+    except sqlite3.IntegrityError:
+        # Set the positions to a temporary negative value
+        CUR.execute("UPDATE questions SET position = -(position + 1) WHERE position >= ?", (input_question.position,))
+
+        # Convert the positions back to positive, effectively shifting them down
+        CUR.execute("UPDATE questions SET position = -position WHERE position < 0")
+        
+        CUR.execute(
+            "insert into questions (position, title, text, image) values (?, ?, ?, ?)",
+            (input_question.position, input_question.title, input_question.text, input_question.image))
+        # get the id of the last inserted row
+        last_id = CUR.lastrowid
+        # send the request
+        CUR.execute("commit")
+        return last_id, 200
 
     except Exception as e:
+        print("AAAAAAAAAAAAA")
         CUR.execute("rollback")
         raise Exception(e)
 
@@ -201,14 +219,19 @@ def update_question_informations(CUR, input_question: Question, id):
         _, old_question_position = old_question[0], old_question[1] 
 
         # Temporarily set the position of the updating question to a non-existing value
-        CUR.execute("UPDATE questions SET position = -1 WHERE id = ?", (id,))
+        CUR.execute("UPDATE questions SET position = 0 WHERE id = ?", (id,))
 
-        other_question_id = CUR.execute("SELECT id FROM questions WHERE position = ?", (input_question.position,)).fetchone()[0]
-        # Update the position of the fetched question with the old position of the updating question
-        CUR.execute("UPDATE questions SET position = ? WHERE id = ?", (old_question_position, other_question_id))
+        # Check if the new position is less than the old position
+        if input_question.position < old_question_position:
+            # Increment the position of all questions with a position greater than or equal to the new position and less than the old position
+            CUR.execute("UPDATE questions SET position = -(position + 1) WHERE position >= ? AND position < ?", (input_question.position, old_question_position))
+        else:
+            # Decrement the position of all questions with a position less than or equal to the new position and greater than the old position
+            CUR.execute("UPDATE questions SET position = -(position - 1) WHERE position <= ? AND position > ?", (input_question.position, old_question_position))
 
         # Update the position of the updating question with the new position
         CUR.execute("UPDATE questions SET position = ? WHERE id = ?", (input_question.position, id))
+        CUR.execute("UPDATE questions SET position = -position WHERE position < 0")
 
         CUR.execute("commit")
     except Exception as e:
@@ -236,7 +259,9 @@ def delete_question_by_id(id:int):
     try:
         CUR.execute("DELETE FROM answers WHERE id_question = ?", (id,))
         CUR.execute("DELETE FROM questions WHERE id = ?", (id,))
-        CUR.execute("UPDATE questions SET position = position - 1 WHERE position > ?", (question_to_delete.position,))
+        CUR.execute("UPDATE questions SET position = -(position - 1) WHERE position > ?", (question_to_delete.position,))
+        CUR.execute("UPDATE questions SET position = -position WHERE position < 0")
+
         CUR.execute("commit")
         return "Question deleted", 204
     except Exception as e:

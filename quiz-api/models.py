@@ -45,3 +45,10 @@ class participationResult:
             self.playerName = playerName
             self.score = score
             self.date = date
+
+"""
+Pour les participations : idée
+
+Utiliser un token de session qu'on va stocker dans un table qui aura :
+le token de session, le pseudo du joueur, la question actuelle et les réponses fournies sous forme de liste
+"""
