@@ -39,3 +39,9 @@ class Answer:
      @classmethod
      def from_dict(cls, data):
         return cls(data['text'], data['isCorrect'])
+     
+class participationResult:
+     def __init__(self, playerName, score, date):
+            self.playerName = playerName
+            self.score = score
+            self.date = date

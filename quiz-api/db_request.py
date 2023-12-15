@@ -71,10 +71,10 @@ def add_answers(answers:list[Answer], question_id:int):
     CUR = get_cursor()
 
     # SI AJOUT DE REPONSE, AU MOINS UNE DOIT ETRE TRUE (VRAIE)
-    correct_answer_exists = any(answer.isCorrect for answer in answers)
+    correct_answers_count = sum(answer.isCorrect for answer in answers)
 
-    if not correct_answer_exists:
-        raise Exception("At least one answer must be correct")
+    if correct_answers_count != 1:
+        raise Exception("One answer must be correct (no more/less than 1)")
 
     CUR.execute("begin")
 
@@ -227,7 +227,7 @@ def update_answers_informations(CUR, id:int, new_answers:list[Answer]):
 def delete_question_by_id(id:int):
     CUR = get_cursor()
     try:
-        fetch_question(CUR, id, True)
+        question_to_delete = fetch_question(CUR, id, True)
     except Exception as e:
         return {'error': str(e)}, 404
     
@@ -236,6 +236,7 @@ def delete_question_by_id(id:int):
     try:
         CUR.execute("DELETE FROM answers WHERE id_question = ?", (id,))
         CUR.execute("DELETE FROM questions WHERE id = ?", (id,))
+        CUR.execute("UPDATE questions SET position = position - 1 WHERE position > ?", (question_to_delete.position,))
         CUR.execute("commit")
         return "Question deleted", 204
     except Exception as e:

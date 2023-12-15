@@ -37,6 +37,10 @@ def SaveQuestion():
     if token is None:
         return 'Unauthorized', 401
     token = token.split(' ')[1]
+    try:
+        decode_token(token)
+    except JwtError as e:
+        return {'error': str(e)}, 401  
 
     # TRANSFORME LA QUESTION RENSEIGNEE EN OBJET QUESTION
     data = request.get_json()
@@ -77,15 +81,26 @@ def get_question_position():
     
 @app.route("/questions/<int:question_id>", methods=['PUT'])
 def update_question_id(question_id:int):
-     data = request.get_json()
-     question = Question.from_dict(data)
-     answers = [Answer.from_dict(answer) for answer in data['possibleAnswers']]
+     
+    # REGARDE SI REQUETE A TOKEN DANS HEADER
+    token = request.headers.get('Authorization')
+    if token is None:
+        return 'Unauthorized', 401
+    token = token.split(' ')[1]
+    try:
+        decode_token(token)
+    except JwtError as e:
+        return {'error': str(e)}, 401 
+    
+    data = request.get_json()
+    question = Question.from_dict(data)
+    answers = [Answer.from_dict(answer) for answer in data['possibleAnswers']]
 
-     response, code = update_question_by_id(question_id, question, answers)
-     if code ==204:
+    response, code = update_question_by_id(question_id, question, answers)
+    if code ==204:
         return response, code
-     else:
-         return response, code
+    else:
+        return response, code
      
 
 @app.route("/questions/<int:question_id>", methods=['DELETE'])
@@ -96,7 +111,11 @@ def delete_question_id(question_id:int):
     if token is None:
         return 'Unauthorized', 401
     token = token.split(' ')[1]
-
+    try:
+        decode_token(token)
+    except JwtError as e:
+        return {'error': str(e)}, 401 
+    
 
     response, code = delete_question_by_id(question_id)
     if code ==204:
@@ -111,6 +130,11 @@ def delete_all():
     if token is None:
         return 'Unauthorized', 401
     token = token.split(' ')[1]
+    try:
+        decode_token(token)
+    except JwtError as e:
+        return {'error': str(e)}, 401 
+    
 
     response, code = delete_question_everything()
     if code ==204:
