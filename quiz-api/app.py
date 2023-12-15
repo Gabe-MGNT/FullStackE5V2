@@ -86,6 +86,39 @@ def update_question_id(question_id:int):
         return response, code
      else:
          return response, code
+     
+
+@app.route("/questions/<int:question_id>", methods=['DELETE'])
+def delete_question_id(question_id:int):
+     
+    # REGARDE SI REQUETE A TOKEN DANS HEADER
+    token = request.headers.get('Authorization')
+    if token is None:
+        return 'Unauthorized', 401
+    token = token.split(' ')[1]
+
+
+    response, code = delete_question_by_id(question_id)
+    if code ==204:
+        return response, code
+    else:
+         return response, code
+    
+@app.route("/questions/all", methods=["DELETE"])
+def delete_all():
+    # REGARDE SI REQUETE A TOKEN DANS HEADER
+    token = request.headers.get('Authorization')
+    if token is None:
+        return 'Unauthorized', 401
+    token = token.split(' ')[1]
+
+    response, code = delete_question_everything()
+    if code ==204:
+        return response, code
+    else:
+         return response, code
+
+
 
      
 

@@ -138,6 +138,7 @@ def get_question_by_id(id:int):
         question.possibleAnswers = answers
         return question.to_dict(), 200
     except Exception as e:
+        CUR.execute("rollback")
         return {'error': str(e)}, 404
     
 def get_question_by_position(position:int):
@@ -157,8 +158,9 @@ def get_question_by_position(position:int):
         question.possibleAnswers = answers
         return question.to_dict(), 200
     except Exception as e:
+        CUR.execute("rollback")
         print(e)
-        return "rollback", 500
+        return "rollback", 404
     
 
 def str_to_bool(s):
@@ -219,4 +221,36 @@ def update_answers_informations(CUR, id:int, new_answers:list[Answer]):
         print(new_answers)
         add_answers(new_answers, id)
     except Exception as e:
+        raise(e)
+
+
+def delete_question_by_id(id:int):
+    CUR = get_cursor()
+    try:
+        fetch_question(CUR, id, True)
+    except Exception as e:
+        return {'error': str(e)}, 404
+    
+    CUR.execute("begin")
+
+    try:
+        CUR.execute("DELETE FROM answers WHERE id_question = ?", (id,))
+        CUR.execute("DELETE FROM questions WHERE id = ?", (id,))
+        CUR.execute("commit")
+        return "Question deleted", 204
+    except Exception as e:
+        CUR.execute("rollback")
+        raise(e)
+    
+def delete_question_everything():
+    CUR = get_cursor()
+    CUR.execute("begin")
+
+    try:
+        CUR.execute("DELETE FROM answers")
+        CUR.execute("DELETE FROM questions")
+        CUR.execute("commit")
+        return "Everything deleted", 204
+    except Exception as e:
+        CUR.execute("rollback")
         raise(e)
