@@ -183,7 +183,7 @@ def update_question_by_id(id:int, input_question: Question, answers:list[Answer]
     try:
         update_question_informations(CUR, input_question, id)
         update_answers_informations(CUR, id, answers)
-        return "Question updated", 200
+        return "Question updated", 204
     except Exception as e:
         raise(e)
     
@@ -213,14 +213,10 @@ def update_question_informations(CUR, input_question: Question, id):
         CUR.execute("rollback")
         raise(e)
     
-def update_answers_informations(CUR, position_question:int, new_answers:list[Answer]):
+def update_answers_informations(CUR, id:int, new_answers:list[Answer]):
     try:
-        # Delete current answers
-        CUR.execute("DELETE FROM answers WHERE position_question = ?", (position_question,))
-
-        add_answers(new_answers, position_question)
-
-        CUR.execute("commit")
+        CUR.execute("DELETE FROM answers WHERE id_question = ?", (id,))
+        print(new_answers)
+        add_answers(new_answers, id)
     except Exception as e:
-        CUR.execute("rollback")
         raise(e)

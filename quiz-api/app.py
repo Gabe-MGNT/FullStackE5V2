@@ -82,8 +82,8 @@ def update_question_id(question_id:int):
      answers = [Answer.from_dict(answer) for answer in data['possibleAnswers']]
 
      response, code = update_question_by_id(question_id, question, answers)
-     if code ==200:
-        return response
+     if code ==204:
+        return response, code
      else:
          return response, code
 
