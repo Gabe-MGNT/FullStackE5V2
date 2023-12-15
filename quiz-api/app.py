@@ -2,7 +2,7 @@ from flask import Flask, request
 from flask_cors import CORS
 import hashlib
 from jwt_utils import build_token, decode_token, JwtError
-from db_request import add_question, get_question_by_id, get_question_by_position, add_answers
+from db_request import *
 from models import Question, Answer
 
 app = Flask(__name__)
@@ -27,6 +27,8 @@ def Login():
     else:
          return 'Unauthorized', 401
     
+
+    
 @app.route("/questions", methods=['POST'])
 def SaveQuestion():
 
@@ -40,32 +42,50 @@ def SaveQuestion():
     data = request.get_json()
     question = Question.from_dict(data)
 
-    # AJOUTE LA QUESTION RENSEIGNEE
-    question_id, status = add_question(question)
-
-    if status != 200:
-        return {'error': 'Failed to add question'}, status
-
     # TRANSFORME LES REPONSES EN LISTES DOBJETS ANSWERS
     answers = [Answer.from_dict(answer) for answer in data['possibleAnswers']]
 
+    # AJOUTE LA QUESTION RENSEIGNEE
     # AJOUTE LES REPONSES
     try:
+        print("done0")
+        question_id, status = add_question(question)
+        print("done")
         add_answers(answers, question_id)
+        print("done2")
     except Exception as e:
         return {'error': str(e)}, 400
-
     return {'id': question_id}, 200
 
 
 @app.route("/questions/<int:question_id>", methods=['GET'])
-def get_question(question_id:int):
+def get_question_id(question_id:int):
      response, code = get_question_by_id(question_id)
      if code ==200:
         return response
+     else:
+         return response, code
 
+@app.route("/questions", methods=['GET'])
+def get_question_position():
+    position = request.args.get('position')
+    response, code = get_question_by_position(position)
+    if code ==200:
+        return response 
+    else:
+         return response, code
+    
+@app.route("/questions/<int:question_id>", methods=['PUT'])
+def update_question_id(question_id:int):
+     data = request.get_json()
+     question = Question.from_dict(data)
+     answers = [Answer.from_dict(answer) for answer in data['possibleAnswers']]
 
-     
+     response, code = update_question_by_id(question_id, question, answers)
+     if code ==200:
+        return response
+     else:
+         return response, code
 
      
 
