@@ -15,7 +15,8 @@ def hello_world():
 
 @app.route('/quiz-info', methods=['GET'])
 def GetQuizInfo():
-	return {"size": 0, "scores": []}, 200
+    size,_ = get_number_of_questions()
+    return {"size": size, "scores": []}, 200
 
 @app.route("/login", methods=['POST'])
 def Login():

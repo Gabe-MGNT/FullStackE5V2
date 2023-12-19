@@ -316,3 +316,20 @@ def delete_question_everything():
         DB_CONNECTION.rollback()
         CUR.close()
         raise (e)
+
+def get_number_of_questions():
+    CUR = DB_CONNECTION.cursor()
+    CUR.execute("begin")
+
+    try:
+        CUR.execute("SELECT COUNT(*) FROM questions")
+        result = CUR.fetchone()
+        DB_CONNECTION.commit()
+        CUR.close()
+        return result, 200
+    except Exception as e:
+        DB_CONNECTION.rollback()
+        CUR.close()
+        raise (e)
+
+
