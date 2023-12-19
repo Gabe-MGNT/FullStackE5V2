@@ -51,14 +51,9 @@ def SaveQuestion():
 
     # AJOUTE LA QUESTION RENSEIGNEE
     # AJOUTE LES REPONSES
-    try:
-        print("done0")
-        question_id, status = add_question(question)
-        print("done")
-        add_answers(answers, question_id)
-        print("done2")
-    except Exception as e:
-        return {'error': str(e)}, 400
+    question_id, status = add_question(question)
+    add_answers(answers, question_id)
+
     return {'id': question_id}, 200
 
 
@@ -125,6 +120,7 @@ def delete_question_id(question_id:int):
     
 @app.route("/questions/all", methods=["DELETE"])
 def delete_all():
+    print("test")
     # REGARDE SI REQUETE A TOKEN DANS HEADER
     token = request.headers.get('Authorization')
     if token is None:
@@ -133,9 +129,10 @@ def delete_all():
     try:
         decode_token(token)
     except JwtError as e:
-        return {'error': str(e)}, 401 
-    
+        return {'error': str(e)}, 401
 
+    except Exception as e:
+        return {'bizarre error': str(e)}, 401
     response, code = delete_question_everything()
     if code ==204:
         return response, code

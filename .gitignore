@@ -4,3 +4,13 @@ __pycache__
 quizdb.db*
 *.db
 *.db-journal
+.idea/dataSources.local.xml
+.idea/dataSources.xml
+.idea/dataSources/9da51a5a-dc5e-463f-be17-b9940fdc32db.xml
+.idea/dataSources/9da51a5a-dc5e-463f-be17-b9940fdc32db/storage_v2/_src_/schema/main.uQUzAA.meta
+.idea/FullStackE5V2.iml
+.idea/inspectionProfiles/profiles_settings.xml
+.idea/misc.xml
+.idea/sqldialects.xml
+.idea/vcs.xml
+.idea/workspace.xml

@@ -26,14 +26,14 @@ class Question:
 
 
 class Answer:
-     def __init__(self,text:str, isCorrect:bool):
+     def __init__(self,text:str, is_correct:bool):
           self.text = text
-          self.isCorrect = isCorrect
+          self.is_correct = is_correct
 
      def to_dict(self):
         return {
             'text': self.text,
-            'isCorrect': self.isCorrect
+            'isCorrect': self.is_correct
         }
 
      @classmethod
