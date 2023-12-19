@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import participationStorageService from "@/services/ParticipationStorageService";
+
 import { useRouter } from 'vue-router';
 
 var username = ref('');
