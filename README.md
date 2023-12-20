@@ -4,8 +4,8 @@ Ce qu'il faut faire (et déjà fait) :
 - [x] Ajout/modification/suppression des questions
 - [x] Reordering des positions des questions
 - [x] Récupération questions (id et position)
-- [] Le endpoint /participations et tout ce qui est lié
-- [] La communication de QuestionManager.vue et QuestionDisplayer.vue 
+- [ ] Le endpoint /participations et tout ce qui est lié
+- [ ] La communication de QuestionManager.vue et QuestionDisplayer.vue 
 - [] Partie 5 & 6 du front
 - [] Partie 7 du back
 - [] Les critères du front (https://quiz-esiee.notion.site/Pr-sentation-fonctionnelle-de-l-application-Quiz-cc49fb31b44e48f9bee8613e82ed5552)
