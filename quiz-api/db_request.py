@@ -4,7 +4,7 @@ import sqlite3
 
 import sqlite3
 
-DB_CONNECTION = sqlite3.connect("maBDD.db", check_same_thread=False)
+DB_CONNECTION = sqlite3.connect("quizdb.db", check_same_thread=False)
 DB_CONNECTION.isolation_level = None
 
 """
@@ -251,6 +251,9 @@ def update_question_informations(input_question: Question, id):
 
         # Update the position of the updating question with the new position
         CUR.execute("UPDATE questions SET position = ? WHERE id = ?", (input_question.position, id))
+
+        CUR.execute("UPDATE questions SET title = ?, text = ?, image = ? WHERE id = ?", (input_question.title, input_question.text, input_question.image, id))
+
         CUR.execute("UPDATE questions SET position = -position WHERE position < 0")
 
         DB_CONNECTION.commit()
@@ -323,7 +326,7 @@ def get_number_of_questions():
 
     try:
         CUR.execute("SELECT COUNT(*) FROM questions")
-        result = CUR.fetchone()
+        result = CUR.fetchone()[0]
         DB_CONNECTION.commit()
         CUR.close()
         return result, 200
