@@ -329,12 +329,40 @@ def get_number_of_questions():
         result = CUR.fetchone()[0]
         DB_CONNECTION.commit()
         CUR.close()
-        return result, 200
+        return result
     except Exception as e:
         DB_CONNECTION.rollback()
         CUR.close()
         raise (e)
 
+def get_participations():
+    CUR = DB_CONNECTION.cursor()
+    CUR.execute("begin")
+
+    try:
+        CUR.execute("select playerName, score, date from participations order by score desc")
+        rows = CUR.fetchall()
+
+        participations = [ParticipationResult(row[0], row[1], row[2]) for row in rows]
+        DB_CONNECTION.commit()
+        CUR.close()
+
+        return participations
+
+    except Exception as e:
+        DB_CONNECTION.rollback()
+        CUR.close()
+        raise (e)
+
+def get_quiz_info():
+
+    try: 
+        size = get_number_of_questions()
+        participations = get_participations()
+
+        return {"size":size, "participations":participations}, 200
+    except Exception as e:
+        raise(e)
 
 def save_participations(player_name, answers):
     CUR = DB_CONNECTION.cursor()
@@ -366,10 +394,12 @@ def save_participations(player_name, answers):
             else:
                 answersSummaries.append({"correctAnswerPosition":true_answers_i, "wasCorrect":False})
 
-        CUR.execute("INSERT INTO participations (playerName, score) VALUES (?, ?)", (player_name, final_score))
+
+        current_date = datetime.datetime.now()
+        CUR.execute("INSERT INTO participations (playerName, score, date) VALUES (?, ?, ?)", (player_name, final_score, current_date))
         DB_CONNECTION.commit()
         CUR.close()
-        participationResult = ParticipationResult(playerName=player_name, score=final_score, answersSummaries=answersSummaries)
+        participationResult = {"playerName":player_name, "score":final_score, "answersSummaries":answersSummaries, "date":current_date}
         return participationResult, 200
 
 

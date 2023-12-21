@@ -15,8 +15,10 @@ def hello_world():
 
 @app.route('/quiz-info', methods=['GET'])
 def GetQuizInfo():
-    size,_ = get_number_of_questions()
-    return {"size": size, "scores": []}, 200
+    response, code = get_quiz_info()
+    size = response['size']
+    scores = [participation.to_dict() for participation in response['participations']]
+    return {"size": size, "scores": scores}, 200
 
 @app.route("/login", methods=['POST'])
 def Login():
@@ -169,7 +171,7 @@ def put_participations_in_db():
     response, code = save_participations(player_name, answers)
 
     if code ==200:
-        return {"answersSummaries":response.answersSummaries, "playerName":response.playerName, "score": response.score}, 200
+        return {"answersSummaries":response['answersSummaries'], "playerName":response['playerName'], "score": response['score']}, 200
     else:
         return  response, 400
 

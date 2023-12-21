@@ -1,5 +1,3 @@
-
-
 class Question:
     def __init__(self, position:int, title:str, text:str, image:str, possibleAnswers:list=[], id:int=None):
         self.position = position
@@ -41,11 +39,17 @@ class Answer:
         return cls(data['text'], data['isCorrect'])
      
 class ParticipationResult:
-     def __init__(self, playerName, score, answersSummaries):
+     def __init__(self, playerName, score, date):
             self.playerName = playerName
             self.score = score
-            self.answersSummaries = answersSummaries
+            self.date = date
 
+     def to_dict(self):
+        return {
+            'playerName': self.playerName,
+            'score': self.score,
+            'date': self.date
+        }
 """
 Pour les participations : idée
 
