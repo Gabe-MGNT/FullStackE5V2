@@ -40,11 +40,11 @@ class Answer:
      def from_dict(cls, data):
         return cls(data['text'], data['isCorrect'])
      
-class participationResult:
-     def __init__(self, playerName, score, date):
+class ParticipationResult:
+     def __init__(self, playerName, score, answersSummaries):
             self.playerName = playerName
             self.score = score
-            self.date = date
+            self.answersSummaries = answersSummaries
 
 """
 Pour les participations : idée

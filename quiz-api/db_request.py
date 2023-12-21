@@ -1,4 +1,4 @@
-from models import Question, Answer
+from models import Question, Answer, ParticipationResult
 import datetime
 import sqlite3
 
@@ -104,7 +104,7 @@ def add_answers(answers: list[Answer], question_id: int):
     CUR.execute("begin")
 
     try:
-        count = 0
+        count = 1
         for answer in answers:
             # SI REPONSE EXISTE DEJA, ON LA RECUPERE
             result, code = check_answer_exist(CUR, answer, question_id)
@@ -336,3 +336,64 @@ def get_number_of_questions():
         raise (e)
 
 
+def save_participations(player_name, answers):
+    CUR = DB_CONNECTION.cursor()
+    CUR.execute("begin")
+
+
+    try:
+        CUR.execute('SELECT order_added FROM answers INNER JOIN (SELECT id from questions ORDER BY position) as q ON q.id = answers.id_question WHERE answers.is_correct=="True"')
+        result = CUR.fetchall()
+
+        if check_answers_conformity(answers, result) == False:
+            DB_CONNECTION.commit()
+            CUR.close()
+            return "Answers do not match", 400
+        
+        answersSummaries = []
+        final_score = 0
+        for index in range(len(answers)):
+            answers_i = answers[index]
+            true_answers_i = result[index][0]
+
+
+            print("type answers", type(answers_i))
+            print("type true answers", type(true_answers_i))
+
+            if answers_i == true_answers_i:
+                final_score += 1
+                answersSummaries.append({"correctAnswerPosition":true_answers_i, "wasCorrect":True})
+            else:
+                answersSummaries.append({"correctAnswerPosition":true_answers_i, "wasCorrect":False})
+
+        CUR.execute("INSERT INTO participations (playerName, score) VALUES (?, ?)", (player_name, final_score))
+        DB_CONNECTION.commit()
+        CUR.close()
+        participationResult = ParticipationResult(playerName=player_name, score=final_score, answersSummaries=answersSummaries)
+        return participationResult, 200
+
+
+    except Exception as e:
+        DB_CONNECTION.rollback()
+        CUR.close()
+        raise (e)
+
+def check_answers_conformity(answers, true_answers):
+    if len(answers) != len(true_answers):
+        return False
+    return True
+    
+
+def remove_all_participations():
+    CUR = DB_CONNECTION.cursor()
+    CUR.execute("begin")
+
+    try:
+        CUR.execute("DELETE FROM participations")
+        DB_CONNECTION.commit()
+        CUR.close()
+        return "Everything deleted", 204
+    except Exception as e:
+        DB_CONNECTION.rollback()
+        CUR.close()
+        raise (e)

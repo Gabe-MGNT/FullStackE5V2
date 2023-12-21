@@ -16,15 +16,13 @@ onMounted(async () => {
 <template>
   <h1>Question Display page</h1>
 
-  <!--
-  <h2> {{  currentQuestion.title }}</h2>
+  <h2>{{ props.currentQuestion.title }}</h2>
+  <h4> {{ currentQuestion.text }}</h4> 
   
-  <h4> {{ currentQuestion.text }}</h4>
-  -->
-  <!--
+  
   <img v-if="props.currentQuestion.image" :src="props.currentQuestion.image" />
   <a v-for="(answer, index) in props.currentQuestion.possibleAnswers" 
-   @click="emit('click-on-answer', index)">{{ answer.text }}</a>
-  -->
+   @click="emit('click-on-answer', index+1)">{{ answer.text }}</a>
+  
 
 </template>

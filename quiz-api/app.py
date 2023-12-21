@@ -3,7 +3,7 @@ from flask_cors import CORS
 import hashlib
 from jwt_utils import build_token, decode_token, JwtError
 from db_request import *
-from models import Question, Answer
+from models import Question, Answer, ParticipationResult
 
 app = Flask(__name__)
 CORS(app)
@@ -139,6 +139,39 @@ def delete_all():
         return response, code
     else:
          return response, code
+    
+
+@app.route("/participations/all", methods=["DELETE"])
+def delete_all_participations():
+    token = request.headers.get('Authorization')
+    if token is None:
+        return 'Unauthorized', 401
+    token = token.split(' ')[1]
+    try:
+        decode_token(token)
+    except JwtError as e:
+        return {'error': str(e)}, 401
+    except Exception as e:
+        return {'bizarre error': str(e)}, 401
+    response, code = remove_all_participations()
+    if code ==204:
+        return response, code
+    else:
+         return response, code
+
+@app.route("/participations", methods=["POST"])
+def put_participations_in_db():
+    data = request.get_json()
+
+    player_name = data['playerName']
+    answers = data['answers']
+
+    response, code = save_participations(player_name, answers)
+
+    if code ==200:
+        return {"answersSummaries":response.answersSummaries, "playerName":response.playerName, "score": response.score}, 200
+    else:
+        return  response, 400
 
 
 
