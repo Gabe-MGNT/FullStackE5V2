@@ -13,5 +13,12 @@ export default {
     },
     getParticipationScore() {
           // todo : implement
+    },
+
+    saveToken(token){
+      window.sessionStorage.setItem("token",token);
+    },
+    getToken(){
+      return window.sessionStorage.getItem("token");  
     }
   };

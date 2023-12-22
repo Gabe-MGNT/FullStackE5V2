@@ -427,3 +427,30 @@ def remove_all_participations():
         DB_CONNECTION.rollback()
         CUR.close()
         raise (e)
+    
+def return_all_questions():
+    CUR = DB_CONNECTION.cursor()
+    CUR.execute("begin")
+
+    try:
+        CUR.execute("SELECT position, title, text, image, id FROM questions ORDER BY position")
+        question_rows = CUR.fetchall()
+
+        questions = []
+        for question_row in question_rows:
+            answers= fetch_answers(question_row[4])
+
+            question = Question(position=question_row[0], title=question_row[1], text=question_row[2], image=question_row[3], id=question_row[4], possibleAnswers=answers)
+            print(question.possibleAnswers)
+            print(question.to_dict())
+            questions.append(question.to_dict())
+
+        DB_CONNECTION.commit()
+        CUR.close()
+
+        return questions,200
+
+    except Exception as e:
+        DB_CONNECTION.rollback()
+        CUR.close()
+        raise (e)

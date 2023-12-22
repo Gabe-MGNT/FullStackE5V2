@@ -177,6 +177,25 @@ def put_participations_in_db():
 
 
 
+@app.route("/questions/all", methods=['GET'])
+def get_all_questions():
+     
+    # REGARDE SI REQUETE A TOKEN DANS HEADER
+    token = request.headers.get('Authorization')
+    if token is None:
+        return 'Unauthorized', 401
+    token = token.split(' ')[1]
+    try:
+        decode_token(token)
+    except JwtError as e:
+        return {'error': str(e)}, 401 
+    
+    response, code = return_all_questions()
+    if code ==200:
+        return {"questions": response}, 200
+    else:
+        return  response, 400
+
      
 
 if __name__ == '__main__':

@@ -4,7 +4,7 @@ class Question:
         self.title = title
         self.text = text
         self.image = image
-        self.possibleAnswers = []
+        self.possibleAnswers = possibleAnswers
         self.id = id
 
     def to_dict(self):

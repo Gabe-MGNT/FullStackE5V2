@@ -20,4 +20,5 @@ onMounted(async () => {
   </div>
 
   <router-link to="/new-quiz">Démarrer le quiz !</router-link>
+  <router-link to="/login">Login Admin</router-link>
 </template>
