@@ -20,26 +20,37 @@ Problème actuels :
 
 def check_question_exist(input_question: Question):
     CUR = DB_CONNECTION.cursor()
-    CUR.execute("begin")
-    CUR.execute(
-        "select id from questions where position = ? and title = ? and text = ? and image = ?",
-        (input_question.position, input_question.title, input_question.text, input_question.image))
-    result = CUR.fetchone()
-    DB_CONNECTION.commit()
-    # SI EXISTE RENVOIE ID DE LA QUESTION EXISTANTE
-    CUR.close()
+
+    err = ""
+    try:
+        CUR.execute("begin")
+        CUR.execute(
+            "select id from questions where position = ? and title = ? and text = ? and image = ?",
+            (input_question.position, input_question.title, input_question.text, input_question.image))
+        result = CUR.fetchone()
+        DB_CONNECTION.commit()
+        CUR.close()
+    except Exception as e:
+        err = str(e)
+        DB_CONNECTION.rollback()
+        CUR.close()
+        return None, err
+    
     if result is not None:
         # the question already exists, return its id
-        return result[0], 200
+        return result[0], ""
     else:
-        return None, 404
+        return None, ""
 
 
 def add_question(input_question: Question):
     # AJOUT DE QUESTIONS (CAS OU ELLE EXITE DEJA => CHECK AVEC POSITION, TITRE, TEXTE ET IMAGE)
-    id, code = check_question_exist(input_question)
+    id, err = check_question_exist(input_question)
+    if err != "":
+        return None, 500, err
     if id is not None:
-        return id, code
+        return id, 200, ""
+    
     # start transaction
     CUR2 = DB_CONNECTION.cursor()
     CUR2.execute("begin")
@@ -54,7 +65,7 @@ def add_question(input_question: Question):
         # send the request
         DB_CONNECTION.commit()
         CUR2.close()
-        return last_id, 200
+        return last_id, 200, ""
 
     except sqlite3.IntegrityError:
         # Set the positions to a temporary negative value
@@ -71,26 +82,33 @@ def add_question(input_question: Question):
         # send the request
         DB_CONNECTION.commit()
         CUR2.close()
-        return last_id, 200
+        return last_id, 200, ""
 
     except Exception as e:
         DB_CONNECTION.rollback()
         CUR2.close()
-        raise Exception(e)
+        return None, 500, str(e)
 
 
 def check_answer_exist(CUR, input_answer: Answer, question_id: int):
-    CUR.execute(
-        "select id from answers where text = ? and is_correct = ? and id_question = ?",
-        (input_answer.text, str(input_answer.is_correct), question_id))
-    result = CUR.fetchone()
-    DB_CONNECTION.commit()
+    err = ""
+    try :
+        CUR.execute(
+            "select id from answers where text = ? and is_correct = ? and id_question = ?",
+            (input_answer.text, str(input_answer.is_correct), question_id))
+        result = CUR.fetchone()
+        DB_CONNECTION.commit()
+    except Exception as e:
+        DB_CONNECTION.rollback()
+        CUR.close()
+        err = str(e)
+        return None, 500, err
     # SI EXISTE RENVOIE ID DE LA REPONSE EXISTANTE
     if result is not None:
         # the answer already exists, return its id
-        return result[0], 200
+        return result[0], 200, ""
     else:
-        return None, 404
+        return None, 404, ""
 
 
 def add_answers(answers: list[Answer], question_id: int):
@@ -107,7 +125,10 @@ def add_answers(answers: list[Answer], question_id: int):
         count = 1
         for answer in answers:
             # SI REPONSE EXISTE DEJA, ON LA RECUPERE
-            result, code = check_answer_exist(CUR, answer, question_id)
+            result, code, err = check_answer_exist(CUR, answer, question_id)
+            if err != "":
+                return code, err
+            
             # SINON ON L'AJOUTE
             if result is None:
                 # the answer does not exist, insert it
@@ -120,17 +141,17 @@ def add_answers(answers: list[Answer], question_id: int):
         DB_CONNECTION.commit()
         CUR.close()
 
-        return "Answers added", 200
+        return 200, ""
 
     except Exception as e:
-
         DB_CONNECTION.rollback()
         CUR.close()
-        raise Exception(e)
+        return 500, str(e)
 
 
 def fetch_question(value, search_by_id=False):
     CUR = DB_CONNECTION.cursor()
+
     if search_by_id:
         CUR.execute("select * from questions where id = ?", (value,))
     else:
@@ -138,10 +159,11 @@ def fetch_question(value, search_by_id=False):
     result = CUR.fetchone()
     DB_CONNECTION.commit()
     CUR.close()
-    if result is None or len(result) < 5:
-        raise Exception("No question found or not enough fields in the question record.")
+    if result is None:
+        err = "No question found."
+        return None, 404, err
 
-    return Question(position=result[0], title=result[1], text=result[2], image=result[3], id=result[4])
+    return Question(position=result[0], title=result[1], text=result[2], image=result[3], id=result[4]), 200, ""
 
 
 def fetch_answers(id):
@@ -153,7 +175,11 @@ def fetch_answers(id):
         answers.append(Answer(text=result[0], is_correct=correct).to_dict())
     DB_CONNECTION.commit()
     CUR.close()
-    return answers
+
+    if len(answers)==0:
+        err = "No answer found."
+        return None, 404, err
+    return answers, 200, ""
 
 
 def get_question_by_id(id: int):
@@ -163,19 +189,23 @@ def get_question_by_id(id: int):
     try:
 
         # RECUPERE LA QUESTION PAR ID
-        question = fetch_question(id, True)
+        question, code, err = fetch_question(id, True)
+        if err != "":
+            return None, code, err
 
         # RECUPERE LES REPONSES ASSOCIEES
-        answers = fetch_answers(question.id)
+        answers, code, err = fetch_answers(question.id)
+        if code != 200:
+            return None, code, err
 
         question.possibleAnswers = answers
         DB_CONNECTION.commit()
         CUR.close()
-        return question.to_dict(), 200
+        return question.to_dict(), 200, ""
     except Exception as e:
         DB_CONNECTION.rollback()
         CUR.close()
-        return {'error': str(e)}, 404
+        return None, 500, str(e)
 
 
 def get_question_by_position(position: int):
@@ -183,21 +213,25 @@ def get_question_by_position(position: int):
     CUR.execute("begin")
 
     try:
-        question = fetch_question(position)
+        question, code, err = fetch_question(position)
+        if err != "":
+            return {}, code, err
 
         # RECUPERE LES REPONSES ASSOCIEES
         CUR.execute("select * from answers where id_question = ? order by order_added", (question.id,))
 
-        answers = fetch_answers(question.id)
+        answers, code, err = fetch_answers(question.id)
+        if err != "":
+            return None, code, err
 
         DB_CONNECTION.commit()
         CUR.close()
         question.possibleAnswers = answers
-        return question.to_dict(), 200
+        return question.to_dict(), 200, ""
     except Exception as e:
         DB_CONNECTION.rollback()
         CUR.close()
-        return "rollback", 404
+        return {}, 500,  str(e)
 
 
 def str_to_bool(s):
@@ -211,16 +245,20 @@ def str_to_bool(s):
 
 def update_question_by_id(id: int, input_question: Question, answers: list[Answer]):
     try:
-        fetch_question(id, True)
+        question, code, err =fetch_question(id, True)
+        if err != "":
+            return code, err
     except Exception as e:
-        return {'error': str(e)}, 404
+        return 500, str(e)
 
-    try:
-        update_question_informations(input_question, id)
-        update_answers_informations(id, answers)
-        return "Question updated", 204
-    except Exception as e:
-        raise (e)
+    code, err = update_question_informations(input_question, id)
+    if err != "":
+        return code, err
+    code, err = update_answers_informations(id, answers)
+    if err != "":
+        return code, err        
+    return 204, ""
+
 
 
 def update_question_informations(input_question: Question, id):
@@ -231,6 +269,8 @@ def update_question_informations(input_question: Question, id):
             "UPDATE questions SET position = ?, title = ?, text = ?, image = ? WHERE id = ?",
             (input_question.position, input_question.title, input_question.text, input_question.image, id))
         DB_CONNECTION.commit()
+
+        return 200, ""
     except sqlite3.IntegrityError:
         # Fetch the ID of the question with the new position
         old_question = CUR.execute("SELECT id, position FROM questions WHERE id = ?", (id,)).fetchone()
@@ -258,10 +298,11 @@ def update_question_informations(input_question: Question, id):
 
         DB_CONNECTION.commit()
         CUR.close()
+        return 200, ""
     except Exception as e:
         DB_CONNECTION.rollback()
         CUR.close()
-        raise (e)
+        return 500, str(e)
 
 
 def update_answers_informations(id: int, new_answers: list[Answer]):
@@ -271,21 +312,26 @@ def update_answers_informations(id: int, new_answers: list[Answer]):
         DB_CONNECTION.commit()
         CUR.close()
 
-        add_answers(new_answers, id)
+        code, err = add_answers(new_answers, id)
+        if err != "":
+            return code, err
+        return 200, ""
     except Exception as e:
         DB_CONNECTION.rollback()
         CUR.close()
-        raise (e)
+        return 500, str(e)
 
 
 def delete_question_by_id(id: int):
     CUR = DB_CONNECTION.cursor()
     try:
-        question_to_delete = fetch_question(id, True)
+        question_to_delete, code, err = fetch_question(id, True)
+        if err != "":
+            return code, err
     except Exception as e:
         DB_CONNECTION.rollback()
         CUR.close()
-        return {'error': str(e)}, 404
+        return 500, str(e)
 
     CUR.execute("begin")
 
@@ -298,11 +344,11 @@ def delete_question_by_id(id: int):
 
         DB_CONNECTION.commit()
         CUR.close()
-        return "Question deleted", 204
+        return 204, ""
     except Exception as e:
         DB_CONNECTION.rollback()
         CUR.close()
-        raise (e)
+        return 500, str(e)
 
 
 def delete_question_everything():
@@ -314,26 +360,26 @@ def delete_question_everything():
         CUR.execute("DELETE FROM questions")
         DB_CONNECTION.commit()
         CUR.close()
-        return "Everything deleted", 204
+        return 204, ""
     except Exception as e:
         DB_CONNECTION.rollback()
         CUR.close()
-        raise (e)
+        return 500, str(e)
 
 def get_number_of_questions():
     CUR = DB_CONNECTION.cursor()
     CUR.execute("begin")
-
     try:
         CUR.execute("SELECT COUNT(*) FROM questions")
         result = CUR.fetchone()[0]
         DB_CONNECTION.commit()
         CUR.close()
-        return result
+        return result, 200, ""
     except Exception as e:
         DB_CONNECTION.rollback()
         CUR.close()
-        raise (e)
+        return None, 500, str(e)
+
 
 def get_participations():
     CUR = DB_CONNECTION.cursor()
@@ -342,33 +388,31 @@ def get_participations():
     try:
         CUR.execute("select playerName, score, date from participations order by score desc")
         rows = CUR.fetchall()
-
         participations = [ParticipationResult(row[0], row[1], row[2]) for row in rows]
         DB_CONNECTION.commit()
         CUR.close()
-
-        return participations
+        return participations, 200, ""
 
     except Exception as e:
         DB_CONNECTION.rollback()
         CUR.close()
-        raise (e)
+        return None, 500, str(e)
 
 def get_quiz_info():
-
     try: 
-        size = get_number_of_questions()
-        participations = get_participations()
-
-        return {"size":size, "participations":participations}, 200
+        size, code, err = get_number_of_questions()
+        if err != "":
+            return None, code, err
+        participations, code, err = get_participations()
+        if err != "":
+            return None, code, err
+        return {"size":size, "participations":participations}, 200, ""
     except Exception as e:
-        raise(e)
+        return None, 500, str(e)
 
 def save_participations(player_name, answers):
     CUR = DB_CONNECTION.cursor()
     CUR.execute("begin")
-
-
     try:
         CUR.execute('SELECT order_added FROM answers INNER JOIN (SELECT id from questions ORDER BY position) as q ON q.id = answers.id_question WHERE answers.is_correct=="True"')
         result = CUR.fetchall()
@@ -376,14 +420,13 @@ def save_participations(player_name, answers):
         if check_answers_conformity(answers, result) == False:
             DB_CONNECTION.commit()
             CUR.close()
-            return "Answers do not match", 400
+            return None, 400, "Answers do not match"
         
         answersSummaries = []
         final_score = 0
         for index in range(len(answers)):
             answers_i = answers[index]
             true_answers_i = result[index][0]
-
 
             print("type answers", type(answers_i))
             print("type true answers", type(true_answers_i))
@@ -400,13 +443,12 @@ def save_participations(player_name, answers):
         DB_CONNECTION.commit()
         CUR.close()
         participationResult = {"playerName":player_name, "score":final_score, "answersSummaries":answersSummaries, "date":current_date}
-        return participationResult, 200
-
+        return participationResult, 200, ""
 
     except Exception as e:
         DB_CONNECTION.rollback()
         CUR.close()
-        raise (e)
+        return None, 500, str(e)
 
 def check_answers_conformity(answers, true_answers):
     if len(answers) != len(true_answers):
@@ -422,11 +464,11 @@ def remove_all_participations():
         CUR.execute("DELETE FROM participations")
         DB_CONNECTION.commit()
         CUR.close()
-        return "Everything deleted", 204
+        return 204, "Everything deleted"
     except Exception as e:
         DB_CONNECTION.rollback()
         CUR.close()
-        raise (e)
+        return 500, str(e)
     
 def return_all_questions():
     CUR = DB_CONNECTION.cursor()
@@ -438,7 +480,9 @@ def return_all_questions():
 
         questions = []
         for question_row in question_rows:
-            answers= fetch_answers(question_row[4])
+            answers, code, err = fetch_answers(question_row[4])
+            if err != "":
+                return None, code, err
 
             question = Question(position=question_row[0], title=question_row[1], text=question_row[2], image=question_row[3], id=question_row[4], possibleAnswers=answers)
             print(question.possibleAnswers)
@@ -448,9 +492,9 @@ def return_all_questions():
         DB_CONNECTION.commit()
         CUR.close()
 
-        return questions,200
+        return questions, 200, ""
 
     except Exception as e:
         DB_CONNECTION.rollback()
         CUR.close()
-        raise (e)
+        return None, 500, str(e)

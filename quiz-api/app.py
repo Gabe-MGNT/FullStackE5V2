@@ -13,10 +13,14 @@ def hello_world():
     x = 'world'
     return f"Hello, {x}"
 
+
 @app.route('/quiz-info', methods=['GET'])
 def GetQuizInfo():
-    response, code = get_quiz_info()
+    response, code, err = get_quiz_info()
+    if code != 200:
+        return {"ERROR": err}, code
     size = response['size']
+
     scores = [participation.to_dict() for participation in response['participations']]
     return {"size": size, "scores": scores}, 200
 
@@ -54,28 +58,32 @@ def SaveQuestion():
 
     # AJOUTE LA QUESTION RENSEIGNEE
     # AJOUTE LES REPONSES
-    question_id, status = add_question(question)
-    add_answers(answers, question_id)
-
+    question_id, code, err = add_question(question)
+    if code != 200:
+        return {"ERROR": err}, code
+    code, err = add_answers(answers, question_id)
+    if code != 200:
+        return {"ERROR": err}, code
+    
     return {'id': question_id}, 200
 
 
 @app.route("/questions/<int:question_id>", methods=['GET'])
 def get_question_id(question_id:int):
-     response, code = get_question_by_id(question_id)
-     if code ==200:
-        return response
+     question_dict, code, err = get_question_by_id(question_id)
+     if code != 200:
+        return {"ERROR": err}, code
      else:
-         return response, code
+         return question_dict, code
 
 @app.route("/questions", methods=['GET'])
 def get_question_position():
     position = request.args.get('position')
-    response, code = get_question_by_position(position)
-    if code ==200:
-        return response 
+    question_dict, code, err = get_question_by_position(position)
+    if code != 200:
+        return {"ERROR": err}, code
     else:
-         return response, code
+         return question_dict, code
     
 @app.route("/questions/<int:question_id>", methods=['PUT'])
 def update_question_id(question_id:int):
@@ -94,16 +102,13 @@ def update_question_id(question_id:int):
     question = Question.from_dict(data)
     answers = [Answer.from_dict(answer) for answer in data['possibleAnswers']]
 
-    response, code = update_question_by_id(question_id, question, answers)
-    if code ==204:
-        return response, code
-    else:
-        return response, code
-     
+    code, err = update_question_by_id(question_id, question, answers)
+    if code != 204:
+        return {"ERROR": err}, code
+    return {"Message": err}, code
 
 @app.route("/questions/<int:question_id>", methods=['DELETE'])
 def delete_question_id(question_id:int):
-     
     # REGARDE SI REQUETE A TOKEN DANS HEADER
     token = request.headers.get('Authorization')
     if token is None:
@@ -113,13 +118,10 @@ def delete_question_id(question_id:int):
         decode_token(token)
     except JwtError as e:
         return {'error': str(e)}, 401 
-    
-
-    response, code = delete_question_by_id(question_id)
-    if code ==204:
-        return response, code
-    else:
-         return response, code
+    code, err = delete_question_by_id(question_id)
+    if code != 204:
+        return {"ERROR": err}, code
+    return {"Message": err}, code
     
 @app.route("/questions/all", methods=["DELETE"])
 def delete_all():
@@ -136,11 +138,10 @@ def delete_all():
 
     except Exception as e:
         return {'bizarre error': str(e)}, 401
-    response, code = delete_question_everything()
-    if code ==204:
-        return response, code
-    else:
-         return response, code
+    code, err = delete_question_everything()
+    if code != 204:
+        return {"ERROR": err}, code
+    return {"Message": err}, code
     
 
 @app.route("/participations/all", methods=["DELETE"])
@@ -155,11 +156,10 @@ def delete_all_participations():
         return {'error': str(e)}, 401
     except Exception as e:
         return {'bizarre error': str(e)}, 401
-    response, code = remove_all_participations()
-    if code ==204:
-        return response, code
-    else:
-         return response, code
+    code, err = remove_all_participations()
+    if code != 204:
+        return {"ERROR": err}, code
+    return {"Message": err}, code
 
 @app.route("/participations", methods=["POST"])
 def put_participations_in_db():
@@ -168,13 +168,12 @@ def put_participations_in_db():
     player_name = data['playerName']
     answers = data['answers']
 
-    response, code = save_participations(player_name, answers)
+    participations, code, err = save_participations(player_name, answers)
 
-    if code ==200:
-        return {"answersSummaries":response['answersSummaries'], "playerName":response['playerName'], "score": response['score']}, 200
+    if code !=200:
+        return {"ERROR": err}, code
     else:
-        return  response, 400
-
+        return {"answersSummaries":participations['answersSummaries'], "playerName":participations['playerName'], "score": participations['score']}, 200
 
 
 @app.route("/questions/all", methods=['GET'])
@@ -190,13 +189,14 @@ def get_all_questions():
     except JwtError as e:
         return {'error': str(e)}, 401 
     
-    response, code = return_all_questions()
-    if code ==200:
-        return {"questions": response}, 200
+    all_questions, code, err = return_all_questions()
+    if code !=200:
+        return {"ERROR": err}, code
     else:
-        return  response, 400
+        return  all_questions, 200
 
      
 
 if __name__ == '__main__':
-    app.run()
+    #app.run()
+    app.run(debug=True)
