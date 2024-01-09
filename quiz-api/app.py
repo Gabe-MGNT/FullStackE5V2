@@ -14,6 +14,14 @@ def hello_world():
     return f"Hello, {x}"
 
 
+@app.route("/rebuild-db", methods=['POST'])
+def RebuildDb():
+    code, err = create_db()
+    if err != "":
+        return {"ERROR": err}, code
+    return "Ok", code
+
+
 @app.route('/quiz-info', methods=['GET'])
 def GetQuizInfo():
     response, code, err = get_quiz_info()

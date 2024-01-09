@@ -4,7 +4,7 @@ import sqlite3
 
 import sqlite3
 
-DB_CONNECTION = sqlite3.connect("quizdb.db", check_same_thread=False)
+DB_CONNECTION = sqlite3.connect("test_rebuild.db", check_same_thread=False)
 DB_CONNECTION.isolation_level = None
 
 """
@@ -498,3 +498,53 @@ def return_all_questions():
         DB_CONNECTION.rollback()
         CUR.close()
         return None, 500, str(e)
+    
+
+def create_db():
+
+    db_name = 'test_rebuild'
+
+    answers_table = """
+    CREATE TABLE IF NOT EXISTS "answers" (
+	"order_added"	INTEGER NOT NULL,
+	"text"	TEXT NOT NULL,
+	"id_question"	INTEGER NOT NULL,
+	"id"	INTEGER NOT NULL,
+	"is_correct"	TEXT NOT NULL,
+	PRIMARY KEY("id" AUTOINCREMENT),
+	UNIQUE("text","id_question"))
+    """
+
+    participations_table = """
+    CREATE TABLE IF NOT EXISTS "participations" (
+	"playerName"	TEXT,
+	"score"	INTEGER,
+	"id"	INTEGER NOT NULL,
+	"date"	TEXT,
+	PRIMARY KEY("id" AUTOINCREMENT))
+    """
+
+    questions_table = """
+    CREATE TABLE IF NOT EXISTS "questions" (
+	"position"	INTEGER NOT NULL UNIQUE,
+	"title"	TEXT,
+	"text"	TEXT NOT NULL UNIQUE,
+	"image"	TEXT,
+	"id"	INTEGER UNIQUE,
+	PRIMARY KEY("id" AUTOINCREMENT))
+    """
+    try:
+        conn = sqlite3.connect(f'{db_name}.db')
+        c = conn.cursor()
+
+        c.execute(answers_table)
+        c.execute(participations_table)
+        c.execute(questions_table)
+
+        conn.commit()
+        conn.close()
+
+        return 200, ""
+    except Exception as e:
+        return 500, str(e)
+
